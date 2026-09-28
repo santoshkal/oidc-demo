@@ -57,6 +57,10 @@ func newOIDCLoginCmd() *cobra.Command {
 			// Step 1: Ask the server "who are you?" via discovery.
 			// This downloads /.well-known/openid-configuration to learn auth/token/jwks URLs.
 			// oidc.NewProvider does this for us.
+			// First make sure something is actually listening, so we can give a clear error.
+			if err := checkProviderReachable(issuer); err != nil {
+				return err
+			}
 			provider, err := oidc.NewProvider(ctx, issuer)
 			if err != nil {
 				return fmt.Errorf("discovery failed for %s: %w", issuer, err)
@@ -211,7 +215,7 @@ func newOIDCLoginCmd() *cobra.Command {
 	cmd.Flags().StringVar(&clientID, "client-id", "demo-client", "OIDC client ID")
 	cmd.Flags().StringVar(&scopes, "scopes", "openid profile email", "space-separated scopes (must include openid)")
 	cmd.Flags().IntVar(&port, "port", 8087, "local callback port (different from oauth demo)")
-	_ = cmd.MarkFlagRequired("provider")
+	// No MarkFlagRequired: --provider already has a default of the local mock IdP
 	return cmd
 }
 
@@ -229,6 +233,10 @@ func newOIDCVerifyCmd() *cobra.Command {
 				ctx = context.Background()
 			}
 			issuer = strings.TrimSuffix(issuer, "/")
+			// Make sure the issuer is up before we try to talk to it
+			if err := checkProviderReachable(issuer); err != nil {
+				return err
+			}
 			// First, learn about the server via discovery
 			provider, err := oidc.NewProvider(ctx, issuer)
 			if err != nil {
@@ -270,6 +278,10 @@ func newOIDCUserinfoCmd() *cobra.Command {
 				ctx = context.Background()
 			}
 			issuer = strings.TrimSuffix(issuer, "/")
+			// Make sure the issuer is up before we try to talk to it
+			if err := checkProviderReachable(issuer); err != nil {
+				return err
+			}
 			// Learn where /userinfo lives via discovery
 			provider, err := oidc.NewProvider(ctx, issuer)
 			if err != nil {

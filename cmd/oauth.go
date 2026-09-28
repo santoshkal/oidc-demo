@@ -67,6 +67,10 @@ For offline demo: first run 'oidc-demo serve --port 8085' then
 			}
 			// Remove trailing "/" so "http://localhost:8085/" becomes "http://localhost:8085"
 			providerURL = strings.TrimSuffix(providerURL, "/")
+			// Make sure the provider is up before we print a URL the user cannot open
+			if err := checkProviderReachable(providerURL); err != nil {
+				return err
+			}
 
 			// Step 1: Make a secret string (verifier) and its scrambled version (challenge).
 			// We send challenge to server, keep verifier private. This stops hackers stealing the code.
@@ -173,7 +177,7 @@ For offline demo: first run 'oidc-demo serve --port 8085' then
 	cmd.Flags().StringVar(&scopes, "scopes", "read write", "space-separated scopes (no openid)")
 	cmd.Flags().IntVar(&port, "port", 8086, "local callback port")
 	cmd.Flags().BoolVar(&noBrowser, "no-browser", true, "do not try to open browser (just print URL)")
-	_ = cmd.MarkFlagRequired("provider")
+	// No MarkFlagRequired: --provider already has a default, so it works without being typed
 	return cmd
 }
 

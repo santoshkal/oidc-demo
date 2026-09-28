@@ -2,27 +2,29 @@
 
 Learn the difference hands-on: **OAuth2 = Authorization** (`what can the app do?`), **OIDC = Authentication** (`who is the user?`) — using the most popular Go libraries and a local mock IdP so it works offline.
 
-| Concern | Library |
-|---|---|
-| CLI tree, flags, completions | `github.com/spf13/cobra` |
-| OAuth2 client (Auth Code + PKCE, Client Credentials) | `golang.org/x/oauth2` |
-| OIDC Discovery + `id_token` verification + UserInfo | `github.com/coreos/go-oidc/v3` |
-| JWT signing / JWKS | `github.com/golang-jwt/jwt/v5` + `github.com/go-jose/go-jose/v4` |
-
-Go version: **1.26** (`go.mod: go 1.26.7`)
-
 ---
 
 ## Core Concepts
 
-### Actors (the four players)
+### Actors — a story before the table
 
-| Term | Meaning | In this demo |
-|---|---|---|
-| **Client** | Your app asking for access | `oidc-demo` |
-| **Authorization Server (AS)** | Decides what the client may do, issues tokens | `serve` (mock) |
-| **Resource Server / API** | The service holding the data you want | also `serve` in this demo |
-| **Identity Provider (IdP)** | Knows who the user is, authenticates them | same mock server, OIDC side |
+Imagine a **vault** holding a document you want. You're too busy to get it yourself, so you send **your assistant** to the building. But the building has rules: the assistant can't just walk in and grab the document — it must first get a **permission slip** from the front-office, and the front-office only prints that slip after confirming *who you are* and *what exactly the assistant is allowed to take*.
+
+Now map that story to the players:
+
+| Actor | Plain-English job | Analogy | In this demo |
+|---|---|---|---|
+| **The User** | The person who owns the data and must click "allow" | You | you, running the command |
+| **Client** | Your app that wants to act *on the user's behalf* | Your assistant | the `oidc-demo` CLI |
+| **Authorization Server (AS)** | Checks what the app may do, hands out the permission slip (`access_token`) | The front-office | `serve` (mock) |
+| **Resource Server / API** | Holds the actual data the app wants | The vault | also `serve` in this demo |
+| **Identity Provider (IdP)** | Knows *who* the user really is, issues the identity proof | The passport office | the same `serve`, OIDC side |
+
+Three things worth spelling out:
+
+1. **Client ≠ the thing being accessed.** It's the *app asking*, not the server that answers. Common mix-up.
+2. **AS and IdP are usually the same product.** Google, Azure AD, Keycloak and our mock all play both roles — they hand out the permission slip **and** the passport. That's why the terminology blends (you'll see "Authorization Server / IdP" used interchangeably).
+3. **Resource Server sits outside OIDC.** It only cares about the `access_token` permission slip; it never sees the `id_token` passport. That's why the same mock server runs both sides: one server, three hats. In real life they're separate services (e.g. Google = AS+IdP, your own API = resource server).
 
 ### The two questions
 
